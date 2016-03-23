@@ -1,0 +1,16 @@
+{
+  "name": "gulp-extract",
+  "version": "1.0.0",
+  "description": "Extract strings from text files",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Jairo Narvaez",
+  "license": "ISC",
+  "dependencies": {
+    "istextorbinary": "^1.0.2",
+    "readable-stream": "^2.0.1",
+    "replacestream": "^4.0.0"
+  }
+}
