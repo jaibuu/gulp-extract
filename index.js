@@ -3,8 +3,11 @@
 var Transform = require('readable-stream/transform');
 var rs = require('replacestream');
 var istextorbinary = require('istextorbinary');
+var PluginError = require('gulp-util').PluginError;
+var fs = require('fs');
 
-module.exports = function(search, replacement, options) {
+module.exports = function(search, output_file_path, separator, options) {
+
   return new Transform({
     objectMode: true,
     transform: function(file, enc, callback) {
@@ -12,42 +15,35 @@ module.exports = function(search, replacement, options) {
         return callback(null, file);
       }
 
-      function doReplace() {
+      var self = this;
+
+      function doMatch() {
         if (file.isStream()) {
-          file.contents = file.contents.pipe(rs(search, replacement));
+          file.contents = file.contents.pipe(rs(search, output_file_path, separator));
           return callback(null, file);
         }
 
         if (file.isBuffer()) {
           if (search instanceof RegExp) {
-            file.contents = new Buffer(String(file.contents).replace(search, replacement));
-          }
-          else {
-            var chunks = String(file.contents).split(search);
+            var arr = String(file.contents).match(search);
 
-            var result;
-            if (typeof replacement === 'function') {
-              // Start with the first chunk already in the result
-              // Replacements will be added thereafter
-              // This is done to avoid checking the value of i in the loop
-              result = [ chunks[0] ];
+            if(arr){
 
-              // The replacement function should be called once for each match
-              for (var i = 1; i < chunks.length; i++) {
-                // Add the replacement value
-                result.push(replacement(search));
-
-                // Add the next chunk
-                result.push(chunks[i]);
+              for (var i = arr.length - 1; i >= 0; i--) {
+                
+                fs.appendFile(output_file_path, arr[i] + separator, function (err) {
+                  if(err) console.log('Error writing', err);
+                });
               }
 
-              result = result.join('');
-            }
-            else {
-              result = chunks.join(replacement);
+            } else {
+              console.log('Nothing found');
             }
 
-            file.contents = new Buffer(result);
+
+          }
+          else {
+            self.emit('error', new PluginError('gulp-extract', 'You must use RegExp'));
           }
           return callback(null, file);
         }
@@ -64,14 +60,14 @@ module.exports = function(search, replacement, options) {
           if (!result) {
             callback(null, file);
           } else {
-            doReplace();
+            doMatch();
           }
         });
 
         return;
       }
 
-      doReplace();
+      doMatch();
     }
   });
 };
